@@ -59,12 +59,12 @@ namespace HabitTracker
                     case "3":
                         DeleteRecord();
                         break;
-                        //case "4":
-                        //    UpdateRecord();
-                        //    break;
-                        //default:
-                        //    console.writeline("\ninvalid command, please type a number from 0 to 4");
-                        //    break;
+                    case "4":
+                        UpdateRecord();
+                        break;
+                    default:
+                        Console.WriteLine("\ninvalid command, please type a number from 0 to 4");
+                        break;
                 }
             }
         }
@@ -159,6 +159,40 @@ namespace HabitTracker
             Console.WriteLine($"\n\nRecord with ID {recordId} has been deleted.\n\n");
         }
 
+        private static void UpdateRecord()
+        {
+            Console.Clear();
+            GetAllRecords();
+
+            var recordId = GetNumberInput("\n\nPlease type the ID of the record you want to update, or press 0 to return to the main menu");
+
+            using (var connection = new SqliteConnection(connectionString))
+            {                
+                connection.Open();
+
+                var checkCmd = connection.CreateCommand();
+                checkCmd.CommandText =
+                    $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = {recordId})";
+                int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                if (checkQuery == 0)
+                {
+                    Console.WriteLine($"Record with ID {recordId} does not exist");
+                    connection.Close();
+                    UpdateRecord();
+                }
+
+                string date = GetDateInput();
+
+                int quantityToUpdate = GetNumberInput("\n\nPlease input number of glasses or unit of your choice (no decimals)\n\n");
+
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = $"UPDATE drinking_water SET date = '{date}', quantity = {quantityToUpdate} WHERE Id = {recordId}";
+                tableCmd.ExecuteNonQuery();
+                connection.Close();
+            }
+        }
+
         public static string GetDateInput() 
         {
             Console.WriteLine("\nPlease insert the date: (Format: dd-mm-yy) Type 0 to return to main menu");
@@ -179,11 +213,6 @@ namespace HabitTracker
             return finalInput;
         }
 
-        public class DrinkingWater
-        {
-            public int Id { get; set; }
-            public DateTime Date { get; set; }
-            public int Quantity { get; set; }
-        }
+        
     }
 }
